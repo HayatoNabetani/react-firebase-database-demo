@@ -26,7 +26,7 @@ const App = () => {
     });
   }, []);
 
-  const uploadHandler = (type:string,file:any) => {
+  const uploadHandler = (type:string,file:any): string => {
     const name = file.name;
     const storage = getStorage();
     const storageRef = ref(storage, `${type}/${name}`);
@@ -51,22 +51,40 @@ const App = () => {
       },
       (error: any) => {
         // Handle unsuccessful uploads
+        switch (error.code) {
+          case "storage/unauthorized":
+            // User doesn't have permission to access the object
+            break;
+          case "storage/canceled":
+            // User canceled the upload
+            break;
+
+          // ...
+
+          case "storage/unknown":
+            // Unknown error occurred, inspect error.serverResponse
+            break;
+        }
+        return "fail";
       },
       () => {
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
           console.log("File available at", downloadURL);
+          return downloadURL;
         });
       }
     );
+    return "fail";//これなぜか必要になっちゃう
   }
 
-  const setImageFile = (imgFile: any) => {
+  const setImageFile = (imgFile: any): string => {
     // アップロード処理
     console.log("画像アップロード処理");
     const file = imgFile;
-    const type:string = "image";
-    uploadHandler(type,file);
-  }
+    const type: string = "image";
+    const path:string = uploadHandler(type, file);
+    return path;
+  };
 
 
   const setVideoFile = (videoFile:any) => {
@@ -74,7 +92,8 @@ const App = () => {
     console.log("ビデオアップロード処理");
     const file = videoFile;
     const type: string = "videos";
-    uploadHandler(type, file);
+    const path: string = uploadHandler(type, file);
+    return path;
   }
 
 
@@ -86,8 +105,14 @@ const App = () => {
     console.log(imgFile.files[0]);
     console.log(videoFile.files[0]);
     
-    if (imgFile.files[0] !== undefined) setImageFile(imgFile.files[0]);
-    if (videoFile.files[0] !== undefined) setVideoFile(videoFile.files[0]);
+    let imgFilePath = "";
+    let videoFilePath = "";
+    if (imgFile.files[0] !== undefined) {
+      imgFilePath = setImageFile(imgFile.files[0]);
+    };
+    if (videoFile.files[0] !== undefined) {
+      videoFilePath = setVideoFile(videoFile.files[0]);
+    };
   };
 
   return (
